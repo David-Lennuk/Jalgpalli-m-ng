@@ -1,52 +1,54 @@
 using System;
 using System.Collections.Generic;
 
-namespace Jalgpalli;
-
-public class Team
+namespace Jalgpalli
+{
+    public class Team
     {
         public List<Player> Players { get; } = new List<Player>();
         public string Name { get; private set; }
-        public Game Game { get; set; } //движение к мячу
+        public Game Game { get; set; }
+        public int Score { get; private set; } = 0;
 
-    public Team(string name) //название команды
-    {
+        public Team(string name)
+        {
             Name = name;
         }
 
-        public void StartGame(int width, int height) //выдача кахдому игроку пазицию
-    {
+        public void AddScore()
+        {
+            Score++;
+        }
+
+        public void StartGame(int width, int height)
+        {
             Random rnd = new Random();
             foreach (var player in Players)
             {
                 player.SetPosition(
                     rnd.NextDouble() * width,
                     rnd.NextDouble() * height
-                    );
+                );
             }
         }
 
-        public void AddPlayer(Player player)  //добавление играков 
-    {
+        public void AddPlayer(Player player)
+        {
             if (player.Team != null) return;
             Players.Add(player);
             player.Team = this;
         }
 
-        public (double, double) GetBallPosition() //позиция мяча 
-    {
-            return Game.GetBallPositionForTeam(this);
-        }
-
-        public void SetBallSpeed(double vx, double vy) //скорость мяча 
-    {
-            Game.SetBallSpeedForTeam(this, vx, vy);
+        public void Move()
+        {
+            Player closestPlayer = GetClosestPlayerToBall();
+            closestPlayer.Move();
         }
 
         public Player GetClosestPlayerToBall()
         {
             Player closestPlayer = Players[0];
-            double bestDistance = Double.MaxValue;
+            double bestDistance = double.MaxValue;
             foreach (var player in Players)
             {
                 var distance = player.GetDistanceToBall();
@@ -56,13 +58,7 @@ public class Team
                     bestDistance = distance;
                 }
             }
-
             return closestPlayer;
         }
-
-        public void Move()
-        {
-            GetClosestPlayerToBall().MoveTowardsBall();
-            Players.ForEach(player => player.Move());
-        }
     }
+}
