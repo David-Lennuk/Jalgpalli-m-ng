@@ -1,77 +1,85 @@
 using System;
+using System.Threading;
 
-namespace Jalgpalli;
-
-public class Program
+namespace Jalgpalli
 {
-    public static void Main(string[] args)
+    class Program
     {
-        // Create stadium with boundaries
-        Stadium stadium = new Stadium(100, 50);
-
-        // Create teams
-        Team homeTeam = new Team("Team A");
-        Team awayTeam = new Team("Team B");
-
-        // Add players to teams
-        for (int i = 0; i < 5; i++)
+        static void Main(string[] args)
         {
-            homeTeam.AddPlayer(new Player($"Player A{i + 1}"));
-            awayTeam.AddPlayer(new Player($"Player B{i + 1}"));
-        }
+            var stadium = new Stadium(30, 15);
+            var homeTeam = new Team("Home Team");
+            var awayTeam = new Team("Away Team");
 
-        // Create the game
-        Game game = new Game(homeTeam, awayTeam, stadium);
-        game.Start();
-
-        // Game loop simulation
-        for (int tick = 0; tick < 100; tick++) // Simulate 100 ticks
-        {
-            game.Move();
-            PrintGameState(game);
-            System.Threading.Thread.Sleep(500); // Wait for half a second for visibility
-        }
-    }
-
-    private static void PrintGameState(Game game)
-    {
-        Console.Clear();
-        Console.WriteLine("Game State:");
-        Console.WriteLine("Stadium:");
-        for (int y = 0; y < game.Stadium.Height; y++)
-        {
-            for (int x = 0; x < game.Stadium.Width; x++)
+            for (int i = 0; i < 5; i++)
             {
-                // Check if the ball is at this position
-                if (Math.Abs(game.Ball.X - x) < 0.5 && Math.Abs(game.Ball.Y - y) < 0.5)
+                homeTeam.AddPlayer(new Player($"H{i + 1}"));
+                awayTeam.AddPlayer(new Player($"A{i + 1}"));
+            }
+
+            var game = new Game(homeTeam, awayTeam, stadium);
+            game.Start();
+
+            Console.WriteLine("Игра началась! Нажмите любую клавишу для остановки.");
+
+            while (!Console.KeyAvailable)
+            {
+                Console.Clear();
+                game.Move();
+                DrawGame(stadium, game);
+                DrawScore(homeTeam, awayTeam);
+                Thread.Sleep(500);
+            }
+
+            Console.ReadKey();
+            Console.WriteLine("Игра остановлена.");
+        }
+
+        static void DrawGame(Stadium stadium, Game game)
+        {
+            for (int y = 0; y < stadium.Height; y++)
+            {
+                for (int x = 0; x < stadium.Width; x++)
                 {
-                    Console.Write(" O "); // Ball
-                }
-                else
-                {
-                    // Check for players from Team A
-                    Player playerA = game.HomeTeam.Players.Find(p => Math.Abs(p.X - x) < 0.5 && Math.Abs(p.Y - y) < 0.5);
-                    if (playerA != null)
+                    bool playerDrawn = false;
+
+                    foreach (var player in game.HomeTeam.Players)
                     {
-                        Console.Write(" A "); // Team A
-                    }
-                    else
-                    {
-                        // Check for players from Team B
-                        Player playerB = game.AwayTeam.Players.Find(p => Math.Abs(p.X - x) < 0.5 && Math.Abs(p.Y - y) < 0.5);
-                        if (playerB != null)
+                        if ((int)player.X == x && (int)player.Y == y)
                         {
-                            Console.Write(" B "); // Team B
+                            Console.Write("H "); // H для хозяев
+                            playerDrawn = true;
+                        }
+                    }
+
+                    foreach (var player in game.AwayTeam.Players)
+                    {
+                        if ((int)player.X == x && (int)player.Y == y)
+                        {
+                            Console.Write("A "); // A для гостей
+                            playerDrawn = true;
+                        }
+                    }
+
+                    if (!playerDrawn)
+                    {
+                        if ((int)game.Ball.X == x && (int)game.Ball.Y == y)
+                        {
+                            Console.Write("O "); // O для мяча
                         }
                         else
                         {
-                            Console.Write("   "); // Empty space
+                            Console.Write(". "); // Пустое пространство
                         }
                     }
                 }
+                Console.WriteLine();
             }
-            Console.WriteLine();
         }
-        Console.WriteLine();
+
+        static void DrawScore(Team homeTeam, Team awayTeam)
+        {
+            Console.WriteLine($"Счет: {homeTeam.Name} {homeTeam.Score} - {awayTeam.Score} {awayTeam.Name}");
+        }
     }
 }
