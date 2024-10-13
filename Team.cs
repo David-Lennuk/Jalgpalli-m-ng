@@ -1,7 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Numerics;
 
-namespace Jalgpalli
+namespace Jalgpali
 {
     public class Team
     {
@@ -13,11 +14,6 @@ namespace Jalgpalli
         public Team(string name)
         {
             Name = name;
-        }
-
-        public void AddScore()
-        {
-            Score++;
         }
 
         public void StartGame(int width, int height)
@@ -39,16 +35,20 @@ namespace Jalgpalli
             player.Team = this;
         }
 
-        public void Move()
+        public (double, double) GetBallPosition()
         {
-            Player closestPlayer = GetClosestPlayerToBall();
-            closestPlayer.Move();
+            return Game.GetBallPositionForTeam(this);
+        }
+
+        public void SetBallSpeed(double vx, double vy)
+        {
+            Game.SetBallSpeedForTeam(this, vx, vy);
         }
 
         public Player GetClosestPlayerToBall()
         {
             Player closestPlayer = Players[0];
-            double bestDistance = double.MaxValue;
+            double bestDistance = Double.MaxValue;
             foreach (var player in Players)
             {
                 var distance = player.GetDistanceToBall();
@@ -58,7 +58,19 @@ namespace Jalgpalli
                     bestDistance = distance;
                 }
             }
+
             return closestPlayer;
+        }
+
+        public void Move()
+        {
+            GetClosestPlayerToBall().MoveTowardsBall();
+            Players.ForEach(player => player.Move());
+        }
+
+        public void ScoreGoal()
+        {
+            Score++;
         }
     }
 }
