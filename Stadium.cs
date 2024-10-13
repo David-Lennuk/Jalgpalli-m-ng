@@ -1,15 +1,16 @@
-namespace Jalgpalli
+namespace Jalgpali
 {
     public class Stadium
     {
-        public int Width { get; }
-        public int Height { get; }
-
         public Stadium(int width, int height)
         {
             Width = width;
             Height = height;
         }
+
+        public int Width { get; }
+
+        public int Height { get; }
 
         public bool IsIn(double x, double y)
         {
