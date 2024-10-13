@@ -1,85 +1,114 @@
 using System;
-using System.Threading;
+using System.Collections.Generic;
+using System.Numerics;
 
-namespace Jalgpalli
+namespace Jalgpali
 {
     class Program
     {
         static void Main(string[] args)
         {
-            var stadium = new Stadium(30, 15);
-            var homeTeam = new Team("Home Team");
-            var awayTeam = new Team("Away Team");
+            Stadium stadium = new Stadium(40, 20); // Увеличиваем размер стадиона
 
-            for (int i = 0; i < 5; i++)
+
+            Team homeTeam = new Team("Home");
+            Team awayTeam = new Team("Away");
+
+
+            for (int i = 0; i < 11; i++)// Добавляем игроков в команды
             {
-                homeTeam.AddPlayer(new Player($"H{i + 1}"));
-                awayTeam.AddPlayer(new Player($"A{i + 1}"));
+                homeTeam.AddPlayer(new Player($"HomePlayer{i + 1}"));
+                awayTeam.AddPlayer(new Player($"AwayPlayer{i + 1}"));
             }
 
-            var game = new Game(homeTeam, awayTeam, stadium);
+
+            Game game = new Game(homeTeam, awayTeam, stadium);
             game.Start();
 
-            Console.WriteLine("Игра началась! Нажмите любую клавишу для остановки.");
 
-            while (!Console.KeyAvailable)
+            while (true)// Бесконечный игровой цикл
             {
-                Console.Clear();
                 game.Move();
-                DrawGame(stadium, game);
-                DrawScore(homeTeam, awayTeam);
-                Thread.Sleep(500);
-            }
+                PrintGameState(game);
+                System.Threading.Thread.Sleep(500); // Задержка для визуализации
 
-            Console.ReadKey();
-            Console.WriteLine("Игра остановлена.");
+
+                if (Console.KeyAvailable)// Проверка нажатия клавиши для выхода
+                {
+                    var key = Console.ReadKey(true);
+                    if (key.Key == ConsoleKey.Escape) // Выход по нажатию ESC
+                    {
+                        break;
+                    }
+                }
+            }
         }
 
-        static void DrawGame(Stadium stadium, Game game)
+        static void PrintGameState(Game game)
         {
-            for (int y = 0; y < stadium.Height; y++)
+            Console.Clear();
+
+            int width = game.Stadium.Width;
+            int height = game.Stadium.Height;
+            char[,] field = new char[height, width];
+
+
+            for (int y = 0; y < height; y++)//создаём поле
             {
-                for (int x = 0; x < stadium.Width; x++)
+                for (int x = 0; x < width; x++)
                 {
-                    bool playerDrawn = false;
+                    field[y, x] = '.'; //пустота
+                }
+            }
 
-                    foreach (var player in game.HomeTeam.Players)
-                    {
-                        if ((int)player.X == x && (int)player.Y == y)
-                        {
-                            Console.Write("H "); // H для хозяев
-                            playerDrawn = true;
-                        }
-                    }
 
-                    foreach (var player in game.AwayTeam.Players)
-                    {
-                        if ((int)player.X == x && (int)player.Y == y)
-                        {
-                            Console.Write("A "); // A для гостей
-                            playerDrawn = true;
-                        }
-                    }
+            foreach (var player in game.HomeTeam.Players)//игроки домашней команды
+            {
+                int playerX = (int)player.X;
+                int playerY = (int)player.Y;
+                if (playerX >= 0 && playerX < width && playerY >= 0 && playerY < height)
+                {
+                    field[playerY, playerX] = 'H';
+                }
+            }
 
-                    if (!playerDrawn)
-                    {
-                        if ((int)game.Ball.X == x && (int)game.Ball.Y == y)
-                        {
-                            Console.Write("O "); // O для мяча
-                        }
-                        else
-                        {
-                            Console.Write(". "); // Пустое пространство
-                        }
-                    }
+
+            foreach (var player in game.AwayTeam.Players)//игроки выездной команды
+            {
+                int playerX = (int)player.X;
+                int playerY = (int)player.Y;
+                if (playerX >= 0 && playerX < width && playerY >= 0 && playerY < height)
+                {
+                    field[playerY, playerX] = 'A';
+                }
+            }
+
+
+            int ballX = (int)game.Ball.X;//показываем мяч
+            int ballY = (int)game.Ball.Y;
+            if (ballX >= 0 && ballX < width && ballY >= 0 && ballY < height)
+            {
+                field[ballY, ballX] = 'O';
+            }
+
+            // Отображаем ворота
+            field[height / 2 - 1, 0] = 'G'; //ворота домашней
+            field[height / 2, 0] = 'G';
+            field[height / 2 + 1, 0] = 'G';
+            field[height / 2 - 1, width - 1] = 'G'; //ворота выездной
+            field[height / 2, width - 1] = 'G';
+            field[height / 2 + 1, width - 1] = 'G';
+
+            // Выводим поле
+            Console.WriteLine($"Score: {game.HomeTeam.Name} {game.HomeTeam.Score} - {game.AwayTeam.Score} {game.AwayTeam.Name}\n");
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    Console.Write(field[y, x] + " ");
                 }
                 Console.WriteLine();
             }
-        }
-
-        static void DrawScore(Team homeTeam, Team awayTeam)
-        {
-            Console.WriteLine($"Счет: {homeTeam.Name} {homeTeam.Score} - {awayTeam.Score} {awayTeam.Name}");
         }
     }
 }
