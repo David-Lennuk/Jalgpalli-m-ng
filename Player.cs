@@ -1,22 +1,32 @@
 using System;
 
-namespace Jalgpalli
+namespace Jalgpali
 {
     public class Player
     {
         public string Name { get; }
         public double X { get; private set; }
         public double Y { get; private set; }
+        private double _vx, _vy;
         public Team? Team { get; set; } = null;
 
-        private const double MaxSpeed = 2; // Уменьшенная скорость
-        private const double MaxKickSpeed = 5; // Уменьшенная сила удара
-        private const double BallKickDistance = 2; // Ближайшее расстояние для удара
+        private const double MaxSpeed = 5;
+        private const double MaxKickSpeed = 25;
+        private const double BallKickDistance = 10;
+
         private Random _random = new Random();
 
         public Player(string name)
         {
             Name = name;
+        }
+
+        public Player(string name, double x, double y, Team team)
+        {
+            Name = name;
+            X = x;
+            Y = y;
+            Team = team;
         }
 
         public void SetPosition(double x, double y)
@@ -25,50 +35,56 @@ namespace Jalgpalli
             Y = y;
         }
 
-        public double GetDistanceToBall()
+        public (double, double) GetAbsolutePosition()
         {
-            var ballPosition = Team!.Game.Ball;
-            var dx = ballPosition.X - X;
-            var dy = ballPosition.Y - Y;
-            return Math.Sqrt(dx * dx + dy * dy);
+            return Team!.Game.GetPositionForTeam(Team, X, Y);
         }
 
-        public void Move()
+        public double GetDistanceToBall()
         {
-            var ballPosition = Team!.Game.Ball;
-            var distanceToBall = GetDistanceToBall();
-
-            if (distanceToBall < BallKickDistance)
-            {
-                // Удар по мячу
-                Team.Game.Ball.SetSpeed(MaxKickSpeed * _random.NextDouble(), MaxKickSpeed * (_random.NextDouble() - 0.5));
-            }
-            MoveTowardsBall();
+            var ballPosition = Team!.GetBallPosition();
+            var dx = ballPosition.Item1 - X;
+            var dy = ballPosition.Item2 - Y;
+            return Math.Sqrt(dx * dx + dy * dy);
         }
 
         public void MoveTowardsBall()
         {
-            var ballPosition = Team!.Game.Ball;
-            var dx = ballPosition.X - X;
-            var dy = ballPosition.Y - Y;
-
-            if (dx == 0 && dy == 0) return; // Если уже на мяче, ничего не делать
-
+            var ballPosition = Team!.GetBallPosition();
+            var dx = ballPosition.Item1 - X;
+            var dy = ballPosition.Item2 - Y;
             var ratio = Math.Sqrt(dx * dx + dy * dy) / MaxSpeed;
-            if (ratio > 1)
+            _vx = dx / ratio;
+            _vy = dy / ratio;
+        }
+
+        public void Move()
+        {
+            if (Team.GetClosestPlayerToBall() != this)
             {
-                dx /= ratio;
-                dy /= ratio;
+                _vx = 0;
+                _vy = 0;
             }
 
-            X += dx;
-            Y += dy;
-
-            // Проверяем границы поля
-            if (!Team.Game.Stadium.IsIn(X, Y))
+            if (GetDistanceToBall() < BallKickDistance)
             {
-                X = Math.Max(0, Math.Min(X, Team.Game.Stadium.Width - 1));
-                Y = Math.Max(0, Math.Min(Y, Team.Game.Stadium.Height - 1));
+                Team.SetBallSpeed(
+                    MaxKickSpeed * _random.NextDouble(),
+                    MaxKickSpeed * (_random.NextDouble() - 0.5)
+                );
+            }
+
+            var newX = X + _vx;
+            var newY = Y + _vy;
+            var newAbsolutePosition = Team.Game.GetPositionForTeam(Team, newX, newY);
+            if (Team.Game.Stadium.IsIn(newAbsolutePosition.Item1, newAbsolutePosition.Item2))
+            {
+                X = newX;
+                Y = newY;
+            }
+            else
+            {
+                _vx = _vy = 0; //остановка игрока, если он выходит за пределы
             }
         }
     }
