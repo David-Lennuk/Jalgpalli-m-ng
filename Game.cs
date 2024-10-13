@@ -1,4 +1,4 @@
-namespace Jalgpalli
+namespace Jalgpali
 {
     public class Game
     {
@@ -10,34 +10,44 @@ namespace Jalgpalli
         public Game(Team homeTeam, Team awayTeam, Stadium stadium)
         {
             HomeTeam = homeTeam;
+            homeTeam.Game = this;
             AwayTeam = awayTeam;
+            awayTeam.Game = this;
             Stadium = stadium;
         }
 
         public void Start()
         {
             Ball = new Ball(Stadium.Width / 2, Stadium.Height / 2, this);
-            HomeTeam.StartGame(Stadium.Width, Stadium.Height);
-            AwayTeam.StartGame(Stadium.Width, Stadium.Height);
+            HomeTeam.StartGame(Stadium.Width / 2, Stadium.Height);
+            AwayTeam.StartGame(Stadium.Width / 2, Stadium.Height);
         }
 
-        private void CheckForGoals()
+        private (double, double) GetPositionForAwayTeam(double x, double y)
         {
-            if (Ball.X < 0) // Левые ворота
-            {
-                AwayTeam.AddScore();
-                ResetBall();
-            }
-            else if (Ball.X >= Stadium.Width) // Правые ворота
-            {
-                HomeTeam.AddScore();
-                ResetBall();
-            }
+            return (Stadium.Width - x, Stadium.Height - y);
         }
 
-        private void ResetBall()
+        public (double, double) GetPositionForTeam(Team team, double x, double y)
         {
-            Ball = new Ball(Stadium.Width / 2, Stadium.Height / 2, this);
+            return team == HomeTeam ? (x, y) : GetPositionForAwayTeam(x, y);
+        }
+
+        public (double, double) GetBallPositionForTeam(Team team)
+        {
+            return GetPositionForTeam(team, Ball.X, Ball.Y);
+        }
+
+        public void SetBallSpeedForTeam(Team team, double vx, double vy)
+        {
+            if (team == HomeTeam)
+            {
+                Ball.SetSpeed(vx, vy);
+            }
+            else
+            {
+                Ball.SetSpeed(-vx, -vy);
+            }
         }
 
         public void Move()
@@ -45,7 +55,28 @@ namespace Jalgpalli
             HomeTeam.Move();
             AwayTeam.Move();
             Ball.Move();
-            CheckForGoals();
+            CheckGoal();
+        }
+
+        private void CheckGoal()
+        {
+            //проверка на голы
+            if (Ball.X <= 0) //мяч попал в ворота домашней
+            {
+                AwayTeam.ScoreGoal();
+                ResetBall();
+            }
+            else if (Ball.X >= Stadium.Width - 1) //мяч попал в ворота выездной
+            {
+                HomeTeam.ScoreGoal();
+                ResetBall();
+            }
+        }
+
+        private void ResetBall()
+        {
+            Ball.SetPosition(Stadium.Width / 2, Stadium.Height / 2);
+            Ball.SetSpeed(0, 0);
         }
     }
 }
